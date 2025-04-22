@@ -1,37 +1,39 @@
-name: Build Electron App
+name: Build Windows Package
 
 on:
   push:
-    branches: [ master ]
+    branches: [main]
   pull_request:
-    branches: [ master ]
-  workflow_dispatch:
+    branches: [main]
 
 jobs:
-  build:
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-
-    runs-on: ${{ matrix.os }}
+  build-windows:
+    runs-on: windows-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '16' # Versione compatibile con electron 8
 
-      - name: Install dependencies
-        run: npm install
+    - name: Install dependencies
+      run: npm install
 
-      - name: Build Electron app
-        run: npm run electron:build
+    - name: Build project
+      run: npm run webpack
 
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: electron-build-${{ matrix.os }}
-          path: dist_electron/
+    - name: Build Windows package
+      run: npm run build:win
+      env:
+        CSC_IDENTITY_AUTO_DISCOVERY: false # Disabilita code signing se non configurato
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: windows-package
+        path: |
+          release/*.exe
+          release/*.zip
